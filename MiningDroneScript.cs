@@ -170,7 +170,8 @@ private void StartDockingSequence()
 
 private void TransferCargoToBase()
 {
-    if(connector == null) return;
+    if(connector == null || connector.Status != MyShipConnectorStatus.Connected)
+        return;
     var target = connector.GetInventory();
     foreach(var container in cargoContainers)
     {
