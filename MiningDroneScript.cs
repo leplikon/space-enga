@@ -18,6 +18,7 @@ private List<IMyThrust> thrusters = new List<IMyThrust>();
 private List<IMyGyro> gyros = new List<IMyGyro>();
 private IMyShipConnector connector;
 private IMyCargoContainer cargo;
+private List<IMyCargoContainer> cargoContainers = new List<IMyCargoContainer>();
 private IMyShipDrill drill;
 private IMyBatteryBlock battery;
 // Blocks used for basic obstacle detection
@@ -80,7 +81,17 @@ private void Init()
     GridTerminalSystem.GetBlocksOfType(thrusters);
     GridTerminalSystem.GetBlocksOfType(gyros);
     connector = GridTerminalSystem.GetBlockWithName("Connector") as IMyShipConnector;
+    if(connector == null)
+    {
+        Echo("Error: Connector not found!");
+    }
+
+    GridTerminalSystem.GetBlocksOfType(cargoContainers);
     cargo = GridTerminalSystem.GetBlockWithName("Cargo") as IMyCargoContainer;
+    if(cargo == null && cargoContainers.Count > 0)
+    {
+        cargo = cargoContainers[0];
+    }
     drill = GridTerminalSystem.GetBlockWithName("Drill") as IMyShipDrill;
     battery = GridTerminalSystem.GetBlockWithName("Battery") as IMyBatteryBlock;
 
@@ -112,13 +123,40 @@ private bool IsAtPosition(Vector3D pos)
 
 private bool IsCargoFull()
 {
-    var inv = cargo.GetInventory();
-    return inv.CurrentVolume >= inv.MaxVolume * 0.9f; // 90% full
+    foreach(var container in cargoContainers)
+    {
+        var inv = container.GetInventory();
+        if(inv.CurrentVolume >= inv.MaxVolume * 0.9f)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 private bool HasEnoughPower()
 {
-    return battery.CurrentStoredPower / battery.MaxStoredPower > 0.3f; // >30%
+    // Roughly estimate the power needed to fly back to the base.
+    // We multiply the distance to the base by the current ship mass and a
+    // constant factor representing average power consumption. This is a very
+    // coarse approximation but helps prevent the drone from running out of
+    // energy mid-flight.
+    double distance = Vector3D.Distance(rc.GetPosition(), basePosition); // meters
+    double mass = rc.CalculateShipMass().TotalMass; // kg
+
+    // Assume the ship uses about 0.00001 MW for each kilogram of mass while
+    // traveling at cruise speed (~50 m/s). Energy needed is power * time.
+    double avgPower = mass * 0.00001; // MW
+    double travelTimeHours = (distance / 50.0) / 3600.0; // convert seconds to hours
+    double energyNeeded = avgPower * travelTimeHours; // MWh required to reach base
+
+    // Return false if we don't have enough stored power for the return trip.
+    double remainingPower = battery.CurrentStoredPower; // MWh
+    if (remainingPower < energyNeeded)
+        return false;
+
+    // Otherwise ensure we still keep a 30% reserve as before.
+    return remainingPower / battery.MaxStoredPower > 0.3f;
 }
 
 private void StartDockingSequence()
@@ -129,6 +167,24 @@ private void StartDockingSequence()
         rc.ClearWaypoints();
         rc.AddWaypoint(basePosition, "base");
         rc.SetAutoPilotEnabled(true);
+    }
+    else
+    {
+        TransferCargoToBase();
+    }
+}
+
+private void TransferCargoToBase()
+{
+    if(connector == null) return;
+    var target = connector.GetInventory();
+    foreach(var container in cargoContainers)
+    {
+        var inv = container.GetInventory();
+        for(int i = inv.ItemCount - 1; i >= 0; i--)
+        {
+            inv.TransferItemTo(target, i, null, true);
+        }
     }
 }
 
