@@ -22,7 +22,6 @@ private IMyRemoteControl rc;
 private List<IMyThrust> thrusters = new List<IMyThrust>();
 private List<IMyGyro> gyros = new List<IMyGyro>();
 private IMyShipConnector connector;
-private IMyCargoContainer cargo;
 private List<IMyCargoContainer> cargoContainers = new List<IMyCargoContainer>();
 private IMyShipDrill drill;
 private IMyBatteryBlock battery;
@@ -92,11 +91,6 @@ private void Init()
     }
 
     GridTerminalSystem.GetBlocksOfType(cargoContainers);
-    cargo = GridTerminalSystem.GetBlockWithName("Cargo") as IMyCargoContainer;
-    if(cargo == null && cargoContainers.Count > 0)
-    {
-        cargo = cargoContainers[0];
-    }
     drill = GridTerminalSystem.GetBlockWithName("Drill") as IMyShipDrill;
     battery = GridTerminalSystem.GetBlockWithName("Battery") as IMyBatteryBlock;
 
