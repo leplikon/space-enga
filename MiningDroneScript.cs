@@ -15,6 +15,7 @@ private List<IMyThrust> thrusters = new List<IMyThrust>();
 private List<IMyGyro> gyros = new List<IMyGyro>();
 private IMyShipConnector connector;
 private IMyCargoContainer cargo;
+private List<IMyCargoContainer> cargoContainers = new List<IMyCargoContainer>();
 private IMyShipDrill drill;
 private IMyBatteryBlock battery;
 
@@ -52,7 +53,17 @@ private void Init()
     GridTerminalSystem.GetBlocksOfType(thrusters);
     GridTerminalSystem.GetBlocksOfType(gyros);
     connector = GridTerminalSystem.GetBlockWithName("Connector") as IMyShipConnector;
+    if(connector == null)
+    {
+        Echo("Error: Connector not found!");
+    }
+
+    GridTerminalSystem.GetBlocksOfType(cargoContainers);
     cargo = GridTerminalSystem.GetBlockWithName("Cargo") as IMyCargoContainer;
+    if(cargo == null && cargoContainers.Count > 0)
+    {
+        cargo = cargoContainers[0];
+    }
     drill = GridTerminalSystem.GetBlockWithName("Drill") as IMyShipDrill;
     battery = GridTerminalSystem.GetBlockWithName("Battery") as IMyBatteryBlock;
 }
@@ -71,8 +82,15 @@ private bool IsAtPosition(Vector3D pos)
 
 private bool IsCargoFull()
 {
-    var inv = cargo.GetInventory();
-    return inv.CurrentVolume >= inv.MaxVolume * 0.9f; // 90% full
+    foreach(var container in cargoContainers)
+    {
+        var inv = container.GetInventory();
+        if(inv.CurrentVolume >= inv.MaxVolume * 0.9f)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 private bool HasEnoughPower()
@@ -88,6 +106,24 @@ private void StartDockingSequence()
         rc.ClearWaypoints();
         rc.AddWaypoint(basePosition, "base");
         rc.SetAutoPilotEnabled(true);
+    }
+    else
+    {
+        TransferCargoToBase();
+    }
+}
+
+private void TransferCargoToBase()
+{
+    if(connector == null) return;
+    var target = connector.GetInventory();
+    foreach(var container in cargoContainers)
+    {
+        var inv = container.GetInventory();
+        for(int i = inv.ItemCount - 1; i >= 0; i--)
+        {
+            inv.TransferItemTo(target, i, null, true);
+        }
     }
 }
 
