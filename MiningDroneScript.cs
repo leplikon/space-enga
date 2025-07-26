@@ -128,49 +128,29 @@ private bool IsAtPosition(Vector3D pos)
 
 private bool IsCargoFull()
 {
- codex/parse-me.customdata-for-configuration-values
-    var inv = cargo.GetInventory();
-    return inv.CurrentVolume >= inv.MaxVolume * cargoFullPercent; // threshold from config
-
     foreach(var container in cargoContainers)
     {
         var inv = container.GetInventory();
-        if(inv.CurrentVolume >= inv.MaxVolume * 0.9f)
-        {
+        if(inv.CurrentVolume >= inv.MaxVolume * cargoFullPercent)
             return true;
-        }
     }
     return false;
- main
 }
 
 private bool HasEnoughPower()
 {
- codex/parse-me.customdata-for-configuration-values
-    return battery.CurrentStoredPower / battery.MaxStoredPower > batteryThreshold; // from config
-=======
-    // Roughly estimate the power needed to fly back to the base.
-    // We multiply the distance to the base by the current ship mass and a
-    // constant factor representing average power consumption. This is a very
-    // coarse approximation but helps prevent the drone from running out of
-    // energy mid-flight.
-    double distance = Vector3D.Distance(rc.GetPosition(), basePosition); // meters
-    double mass = rc.CalculateShipMass().TotalMass; // kg
+    // Estimate power required to return to base and compare with current reserves
+    double distance = Vector3D.Distance(rc.GetPosition(), basePosition);
+    double mass = rc.CalculateShipMass().TotalMass;
+    double avgPower = mass * 0.00001; // MW consumption per kg at cruise speed
+    double travelTimeHours = (distance / 50.0) / 3600.0; // speed ~50 m/s
+    double energyNeeded = avgPower * travelTimeHours; // MWh
 
-    // Assume the ship uses about 0.00001 MW for each kilogram of mass while
-    // traveling at cruise speed (~50 m/s). Energy needed is power * time.
-    double avgPower = mass * 0.00001; // MW
-    double travelTimeHours = (distance / 50.0) / 3600.0; // convert seconds to hours
-    double energyNeeded = avgPower * travelTimeHours; // MWh required to reach base
-
-    // Return false if we don't have enough stored power for the return trip.
     double remainingPower = battery.CurrentStoredPower; // MWh
     if (remainingPower < energyNeeded)
         return false;
 
-    // Otherwise ensure we still keep a 30% reserve as before.
-    return remainingPower / battery.MaxStoredPower > 0.3f;
- main
+    return remainingPower / battery.MaxStoredPower > batteryThreshold;
 }
 
 private void StartDockingSequence()
