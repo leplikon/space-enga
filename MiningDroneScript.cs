@@ -5,9 +5,14 @@
 // Note: This script is a simplified demonstration and may need
 // adjustments for specific ships or additional safety checks.
 
+private MyIni _ini = new MyIni();
+private float cargoFullPercent = 0.9f;
+private float batteryThreshold = 0.3f;
+
 public Program()
 {
     Runtime.UpdateFrequency = UpdateFrequency.Update100; // run every ~1.6s
+    ParseConfig();
 }
 
 private IMyRemoteControl rc;
@@ -18,9 +23,9 @@ private IMyCargoContainer cargo;
 private IMyShipDrill drill;
 private IMyBatteryBlock battery;
 
-// Waypoints
-private Vector3D basePosition = new Vector3D(0,0,0); // replace with base coords
-private Vector3D miningPosition = new Vector3D(100,0,0); // replace with ore coords
+// Waypoints loaded from configuration
+private Vector3D basePosition = new Vector3D(0,0,0);
+private Vector3D miningPosition = new Vector3D(100,0,0);
 
 public void Main(string arg, UpdateType updateSource)
 {
@@ -72,12 +77,12 @@ private bool IsAtPosition(Vector3D pos)
 private bool IsCargoFull()
 {
     var inv = cargo.GetInventory();
-    return inv.CurrentVolume >= inv.MaxVolume * 0.9f; // 90% full
+    return inv.CurrentVolume >= inv.MaxVolume * cargoFullPercent; // threshold from config
 }
 
 private bool HasEnoughPower()
 {
-    return battery.CurrentStoredPower / battery.MaxStoredPower > 0.3f; // >30%
+    return battery.CurrentStoredPower / battery.MaxStoredPower > batteryThreshold; // from config
 }
 
 private void StartDockingSequence()
@@ -89,5 +94,44 @@ private void StartDockingSequence()
         rc.AddWaypoint(basePosition, "base");
         rc.SetAutoPilotEnabled(true);
     }
+}
+
+private void ParseConfig()
+{
+    MyIniParseResult result;
+    if(!_ini.TryParse(Me.CustomData, out result))
+        return;
+
+    basePosition = ParseGPS(_ini.Get("Settings", "BaseGPS").ToString(), basePosition);
+    miningPosition = ParseGPS(_ini.Get("Settings", "MineGPS").ToString(), miningPosition);
+    cargoFullPercent = _ini.Get("Settings", "CargoFullPercent").ToSingle(cargoFullPercent);
+    batteryThreshold = _ini.Get("Settings", "BatteryThreshold").ToSingle(batteryThreshold);
+}
+
+private Vector3D ParseGPS(string value, Vector3D fallback)
+{
+    if(string.IsNullOrWhiteSpace(value)) return fallback;
+    if(value.StartsWith("GPS:"))
+    {
+        var parts = value.Split(':');
+        if(parts.Length >= 5)
+        {
+            double x, y, z;
+            if(double.TryParse(parts[2], out x) && double.TryParse(parts[3], out y) && double.TryParse(parts[4], out z))
+                return new Vector3D(x, y, z);
+        }
+    }
+    else
+    {
+        char[] sep = new char[] { ',', ';', ' ' };
+        var parts = value.Split(sep, StringSplitOptions.RemoveEmptyEntries);
+        if(parts.Length == 3)
+        {
+            double x, y, z;
+            if(double.TryParse(parts[0], out x) && double.TryParse(parts[1], out y) && double.TryParse(parts[2], out z))
+                return new Vector3D(x, y, z);
+        }
+    }
+    return fallback;
 }
 
