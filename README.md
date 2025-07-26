@@ -1,3 +1,22 @@
+ codex/parse-me.customdata-for-configuration-values
+# space-enga
+
+This repository contains a simple Space Engineers programmable block script for an autonomous mining drone.
+
+## Configuration
+
+The script reads settings from `Me.CustomData` using an INI format. Example:
+
+```
+[Settings]
+BaseGPS=GPS:Base:0:0:0:
+MineGPS=GPS:Mine:100:0:0:
+CargoFullPercent=0.9
+BatteryThreshold=0.3
+```
+
+`BaseGPS` and `MineGPS` accept GPS strings or comma separated coordinates. The percentage values control when the drone heads back to base.
+=======
  codex/implement-waypoint-obstacle-detection
 # Space Enga Mining Drone
 
@@ -52,4 +71,5 @@ During operation the drone alternates between two modes:
 - **Returning**: When cargo is nearly full or the battery level is low, the ship flies to `basePosition` and docks using the connector.
 
 The cycle repeats automatically, allowing for unattended mining runs.
+ main
  main
