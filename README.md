@@ -1,14 +1,14 @@
-# Space Enga Mining Drone
+# Дрон для добычи Space Enga
 
-This repository contains `MiningDroneScript.cs`, a simple C# script for the **Programmable Block** in Space Engineers. The script controls an autonomous mining drone that travels between a base and a mining waypoint. When the cargo is nearly full or the battery charge is low, the drone returns to base, unloads and resumes mining.
+Данный репозиторий содержит `MiningDroneScript.cs` – простой скрипт C# для **Программируемого блока** в игре Space Engineers. Скрипт управляет автономным добывающим дроном, который летает между базой и точкой добычи. Когда груз почти заполнен или заряд батареи низкий, дрон возвращается на базу, выгружает руду и продолжает работу.
 
-## Features
-- Autonomous travel between two waypoints
-- Basic obstacle detection using a forward camera or sensor
-- Configurable thresholds via `Me.CustomData`
+## Особенности
+- Автоматический перелёт между двумя точками
+- Базовое обнаружение препятствий с помощью передней камеры или сенсора
+- Настройка пороговых значений через `Me.CustomData`
 
-## Configuration
-Place the following INI section in the Programmable Block's Custom Data:
+## Конфигурация
+Поместите в поле Custom Data программируемого блока следующий блок INI:
 
 ```
 [Settings]
@@ -18,19 +18,19 @@ CargoFullPercent=0.9
 BatteryThreshold=0.3
 ```
 
-`BaseGPS` and `MineGPS` may also be provided as comma-separated coordinates. The percentage values control when the drone heads back to base.
+`BaseGPS` и `MineGPS` также могут задаваться в виде координат, разделённых запятыми. Процентные значения определяют, когда дрон возвращается на базу.
 
-## Usage
-1. Load `MiningDroneScript.cs` into a programmable block.
-2. Ensure the following blocks exist with these names:
-   - **Remote Control** named `RC`
-   - **Connector** named `Connector`
-   - **Cargo Container** named `Cargo`
-   - **Ship Drill** named `Drill`
-   - **Battery** named `Battery`
-3. Optionally place a forward facing camera or sensor for obstacle detection.
-4. Run the script.
+## Использование
+1. Загрузите `MiningDroneScript.cs` в программируемый блок.
+2. Убедитесь, что следующие блоки существуют и имеют такие имена:
+   - **Remote Control** с именем `RC`
+   - **Connector** с именем `Connector`
+   - **Cargo Container** с именем `Cargo`
+   - **Ship Drill** с именем `Drill`
+   - **Battery** с именем `Battery`
+3. При необходимости установите направленную вперёд камеру или сенсор для обнаружения препятствий.
+4. Запустите скрипт.
 
-## Limitations
-- Obstacle checks scan only 50 m ahead and assume the camera faces forward.
-- The waypoint is not adjusted if an obstacle is detected; the drone simply halts.
+## Ограничения
+- Проверка препятствий производится только на расстоянии до 50 м и предполагает, что камера смотрит вперёд.
+- При обнаружении препятствия точка маршрута не корректируется — дрон просто останавливается.
